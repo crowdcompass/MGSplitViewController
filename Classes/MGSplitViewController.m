@@ -142,6 +142,10 @@
 	_dividerView.splitViewController = self;
 	_dividerView.backgroundColor = MG_DEFAULT_CORNER_COLOR;
 	_dividerStyle = MGSplitViewDividerStyleThin;
+
+    // Added github pull request to fix ios6 layout issues when starting ipad in landscape:
+    // https://github.com/mattgemmell/MGSplitViewController/pull/75
+    self.view.autoresizesSubviews = NO;
 }
 
 
