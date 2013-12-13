@@ -280,7 +280,7 @@
 	}
 	
 	// Layout the master, divider and detail views.
-	CGRect newFrame = CGRectMake(0, 0, width, height);
+    CGRect newFrame = CGRectMake(0, 20.f, width, height);
 	UIViewController *controller;
 	UIView *theView;
 	BOOL shouldShowMaster = [self shouldShowMasterForInterfaceOrientation:theOrientation];
@@ -304,7 +304,6 @@
 			newFrame.origin.x += newFrame.size.width;
 			newFrame.size.width = width - newFrame.origin.x;
 			detailRect = newFrame;
-			
 		} else {
 			if (!shouldShowMaster) {
 				// Move off-screen.
@@ -468,8 +467,8 @@
 		cornersHeight = radius;
 		x = ((shouldShowMaster) ? ((masterFirst) ? _splitPosition : width - (_splitPosition + _splitWidth)) : (0 - _splitWidth)) - radius;
 		y = 0;
-		leadingRect = CGRectMake(x, y, cornersWidth, cornersHeight); // top corners
-		trailingRect = CGRectMake(x, (height - cornersHeight), cornersWidth, cornersHeight); // bottom corners
+		leadingRect = CGRectMake(x, y + 20.f, cornersWidth, cornersHeight); // top corners
+		trailingRect = CGRectMake(x, (height - cornersHeight) + 20.f, cornersWidth, cornersHeight); // bottom corners
 		
 	} else { // top/bottom split
 		x = 0;
