@@ -108,7 +108,6 @@
 	return self;
 }
 
-
 - (id)initWithCoder:(NSCoder *)aDecoder
 {
 	if ((self = [super initWithCoder:aDecoder])) {
@@ -117,7 +116,6 @@
 	
 	return self;
 }
-
 
 - (void)setup
 {
@@ -237,7 +235,7 @@
 	
 	// Find status bar height by checking which dimension of the applicationFrame is narrower than screen bounds.
 	// Little bit ugly looking, but it'll still work even if they change the status bar height in future.
-	float statusBarHeight = MAX((fullScreenRect.size.width - appFrame.size.width), (fullScreenRect.size.height - appFrame.size.height));
+	//float statusBarHeight = MAX((fullScreenRect.size.width - appFrame.size.width), (fullScreenRect.size.height - appFrame.size.height));
     
     float navigationBarHeight = 0;
     if (self.navigationController.navigationBar && !self.navigationController.navigationBarHidden) {
@@ -255,7 +253,7 @@
 	}
 	
 	// Account for status bar, which always subtracts from the height (since it's always at the top of the screen).
-	height -= statusBarHeight;
+	//height -= statusBarHeight;
     height -= navigationBarHeight;
 	
 	return CGSizeMake(width, height);
@@ -280,7 +278,7 @@
 	}
 	
 	// Layout the master, divider and detail views.
-    CGRect newFrame = CGRectMake(0, 20.f, width, height);
+    CGRect newFrame = CGRectMake(0, 0.f, width, height);
 	UIViewController *controller;
 	UIView *theView;
 	BOOL shouldShowMaster = [self shouldShowMasterForInterfaceOrientation:theOrientation];
@@ -467,8 +465,8 @@
 		cornersHeight = radius;
 		x = ((shouldShowMaster) ? ((masterFirst) ? _splitPosition : width - (_splitPosition + _splitWidth)) : (0 - _splitWidth)) - radius;
 		y = 0;
-		leadingRect = CGRectMake(x, y + 20.f, cornersWidth, cornersHeight); // top corners
-		trailingRect = CGRectMake(x, (height - cornersHeight) + 20.f, cornersWidth, cornersHeight); // bottom corners
+		leadingRect = CGRectMake(x, y, cornersWidth, cornersHeight); // top corners
+		trailingRect = CGRectMake(x, (height - cornersHeight), cornersWidth, cornersHeight); // bottom corners
 		
 	} else { // top/bottom split
 		x = 0;
