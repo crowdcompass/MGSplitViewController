@@ -24,6 +24,10 @@
 #define MG_ANIMATION_CHANGE_SUBVIEWS_ORDER		@"ChangeSubviewsOrder"	// Animation ID for internal use.
 
 
+static BOOL isIos7() {
+    return ([[[UIDevice currentDevice] systemVersion] floatValue] >= 7);
+}
+
 @interface MGSplitViewController (MGPrivateMethods)
 
 - (void)setup;
@@ -235,7 +239,7 @@
 	
 	// Find status bar height by checking which dimension of the applicationFrame is narrower than screen bounds.
 	// Little bit ugly looking, but it'll still work even if they change the status bar height in future.
-	//float statusBarHeight = MAX((fullScreenRect.size.width - appFrame.size.width), (fullScreenRect.size.height - appFrame.size.height));
+	float statusBarHeight = MAX((fullScreenRect.size.width - appFrame.size.width), (fullScreenRect.size.height - appFrame.size.height));
     
     float navigationBarHeight = 0;
     if (self.navigationController.navigationBar && !self.navigationController.navigationBarHidden) {
@@ -253,7 +257,7 @@
 	}
 	
 	// Account for status bar, which always subtracts from the height (since it's always at the top of the screen).
-	//height -= statusBarHeight;
+	if (!isIos7()) { height -= statusBarHeight; }
     height -= navigationBarHeight;
 	
 	return CGSizeMake(width, height);
@@ -278,7 +282,7 @@
 	}
 	
 	// Layout the master, divider and detail views.
-    CGRect newFrame = CGRectMake(0, 0.f, width, height);
+    CGRect newFrame = CGRectMake(0, 0, width, height);
 	UIViewController *controller;
 	UIView *theView;
 	BOOL shouldShowMaster = [self shouldShowMasterForInterfaceOrientation:theOrientation];
@@ -479,7 +483,7 @@
 	
 	leadingCorners.frame = leadingRect;
 	trailingCorners.frame = trailingRect;
-	
+
 	// Ensure corners are visible and frontmost.
 	if (!leadingCorners.superview) {
 		[self.view insertSubview:leadingCorners aboveSubview:self.detailViewController.view];
