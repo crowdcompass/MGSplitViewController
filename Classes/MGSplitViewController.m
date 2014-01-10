@@ -23,6 +23,20 @@
 #define MG_ANIMATION_CHANGE_SPLIT_ORIENTATION	@"ChangeSplitOrientation"	// Animation ID for internal use.
 #define MG_ANIMATION_CHANGE_SUBVIEWS_ORDER		@"ChangeSubviewsOrder"	// Animation ID for internal use.
 
+#if !__has_feature(objc_arc)
+#define MGRelease(obj)	[obj release]
+#define MGRetain(obj)	[obj retain]
+#define MGAutorelease(obj)	[obj autorelease]
+#define MGSuperDealloc()	[super dealloc]
+#else
+#define MGRelease(obj)		(void)0
+#define MGRetain(obj)		obj
+#define MGAutorelease(obj)	obj
+#define MGSuperDealloc()	(void)0
+#endif
+
+#define MASTER_INDEX	0
+#define DETAIL_INDEX	1
 
 static BOOL isIos7() {
     return ([[[UIDevice currentDevice] systemVersion] floatValue] >= 7);
@@ -155,13 +169,14 @@ static BOOL isIos7() {
 {
 	_delegate = nil;
 	[self.view.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
-	[_viewControllers release];
-	[_barButtonItem release];
-	[_hiddenPopoverController release];
-	[_dividerView release];
-	[_cornerViews release];
-	
-	[super dealloc];
+
+	MGRelease(_viewControllers);
+	MGRelease(_barButtonItem);
+	MGRelease(_hiddenPopoverController);
+	MGRelease(_dividerView);
+	MGRelease(_cornerViews);
+
+	MGSuperDealloc();
 }
 
 
@@ -447,8 +462,8 @@ static BOOL isIos7() {
 		trailingCorners.cornerBackgroundColor = MG_DEFAULT_CORNER_COLOR;
 		trailingCorners.cornerRadius = MG_DEFAULT_CORNER_RADIUS;
 		_cornerViews = [[NSArray alloc] initWithObjects:leadingCorners, trailingCorners, nil];
-		[leadingCorners release];
-		[trailingCorners release];
+		MGRelease(leadingCorners);
+		MGRelease(trailingCorners);
 		
 	} else if ([_cornerViews count] == 2) {
 		leadingCorners = [_cornerViews objectAtIndex:0];
@@ -569,9 +584,10 @@ static BOOL isIos7() {
 	
 	if (inPopover && !_hiddenPopoverController && !_barButtonItem) {
 		// Create and configure popover for our masterViewController.
-		[_hiddenPopoverController release];
+		MGRelease(_hiddenPopoverController);
 		_hiddenPopoverController = nil;
 		[self.masterViewController viewWillDisappear:NO];
+		[self.masterViewController removeFromParentViewController];
 		_hiddenPopoverController = [[UIPopoverController alloc] initWithContentViewController:self.masterViewController];
 		[self.masterViewController viewDidDisappear:NO];
 		
@@ -595,8 +611,10 @@ static BOOL isIos7() {
 		
 		// Remove master from popover and destroy popover, if it exists.
 		[_hiddenPopoverController dismissPopoverAnimated:NO];
-		[_hiddenPopoverController release];
+		MGRelease(_hiddenPopoverController);
 		_hiddenPopoverController = nil;
+		
+		[self addChildViewController:self.masterViewController];
 		
 		// Inform delegate that the _barButtonItem will become invalid.
 		if (_delegate && [_delegate respondsToSelector:@selector(splitViewController:willShowViewController:invalidatingBarButtonItem:)]) {
@@ -606,7 +624,7 @@ static BOOL isIos7() {
 		}
 		
 		// Destroy _barButtonItem.
-		[_barButtonItem release];
+		MGRelease(_barButtonItem);
 		_barButtonItem = nil;
 		
 		// Move master view.
@@ -921,7 +939,7 @@ static BOOL isIos7() {
 
 - (NSArray *)viewControllers
 {
-	return [[_viewControllers copy] autorelease];
+	return MGAutorelease([_viewControllers copy]);
 }
 
 
@@ -933,11 +951,11 @@ static BOOL isIos7() {
 				[controller.view removeFromSuperview];
 			}
 		}
-		[_viewControllers release];
+		MGRelease(_viewControllers);
 		_viewControllers = [[NSMutableArray alloc] initWithCapacity:2];
 		if (controllers && [controllers count] >= 2) {
-			self.masterViewController = [controllers objectAtIndex:0];
-			self.detailViewController = [controllers objectAtIndex:1];
+			self.masterViewController = [controllers objectAtIndex:MASTER_INDEX];
+			self.detailViewController = [controllers objectAtIndex:DETAIL_INDEX];
 		} else {
 			NSLog(@"Error: %@ requires 2 view-controllers. (%@)", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
 		}
@@ -950,9 +968,9 @@ static BOOL isIos7() {
 - (UIViewController *)masterViewController
 {
 	if (_viewControllers && [_viewControllers count] > 0) {
-		NSObject *controller = [_viewControllers objectAtIndex:0];
+		id controller = [_viewControllers objectAtIndex:MASTER_INDEX];
 		if ([controller isKindOfClass:[UIViewController class]]) {
-			return [[controller retain] autorelease];
+			return MGAutorelease(MGRetain(controller));
 		}
 	}
 	
@@ -966,17 +984,25 @@ static BOOL isIos7() {
 		_viewControllers = [[NSMutableArray alloc] initWithCapacity:2];
 	}
 	
-	NSObject *newMaster = master;
+	UIViewController *newMaster = master;
 	if (!newMaster) {
-		newMaster = [NSNull null];
+		newMaster = (UIViewController *)[NSNull null];
 	}
 	
 	BOOL changed = YES;
 	if ([_viewControllers count] > 0) {
-		if ([_viewControllers objectAtIndex:0] == newMaster) {
-			changed = NO;
-		} else {
-			[_viewControllers replaceObjectAtIndex:0 withObject:newMaster];
+		UIViewController *oldMaster = [_viewControllers objectAtIndex:MASTER_INDEX];
+		changed = !( newMaster == oldMaster );
+		if ( changed ) {
+			if ( [oldMaster isKindOfClass:[UIViewController class]]) {
+				[oldMaster removeFromParentViewController];
+			}
+			
+			[_viewControllers replaceObjectAtIndex:MASTER_INDEX withObject:newMaster];
+			
+			if ( master ) {
+				[self addChildViewController:master];
+			}
 		}
 		
 	} else {
@@ -992,9 +1018,9 @@ static BOOL isIos7() {
 - (UIViewController *)detailViewController
 {
 	if (_viewControllers && [_viewControllers count] > 1) {
-		NSObject *controller = [_viewControllers objectAtIndex:1];
+		id controller = [_viewControllers objectAtIndex:DETAIL_INDEX];
 		if ([controller isKindOfClass:[UIViewController class]]) {
-			return [[controller retain] autorelease];
+			return MGAutorelease(MGRetain(controller));
 		}
 	}
 	
@@ -1009,14 +1035,26 @@ static BOOL isIos7() {
 		[_viewControllers addObject:[NSNull null]];
 	}
 	
+	UIViewController *newDetail = detail;
+	if ( !newDetail ) {
+		newDetail = (UIViewController *)[NSNull null];
+	}
+	
 	BOOL changed = YES;
 	if ([_viewControllers count] > 1) {
-		if ([_viewControllers objectAtIndex:1] == detail) {
-			changed = NO;
-		} else {
-			[_viewControllers replaceObjectAtIndex:1 withObject:detail];
+		UIViewController *oldDetail = [_viewControllers objectAtIndex:DETAIL_INDEX];
+		changed = !(oldDetail == newDetail);
+		if ( changed ) {
+			if ( [oldDetail isKindOfClass:[UIViewController class]]) {
+				[oldDetail removeFromParentViewController];
+			}
+			
+			[_viewControllers replaceObjectAtIndex:DETAIL_INDEX withObject:newDetail];
+			
+			if ( detail ) {
+				[self addChildViewController:detail];
+			}
 		}
-		
 	} else {
 		[_viewControllers addObject:detail];
 	}
@@ -1029,7 +1067,7 @@ static BOOL isIos7() {
 
 - (MGSplitDividerView *)dividerView
 {
-	return [[_dividerView retain] autorelease];
+	return MGAutorelease(MGRetain(_dividerView));
 }
 
 
@@ -1037,8 +1075,8 @@ static BOOL isIos7() {
 {
 	if (divider != _dividerView) {
 		[_dividerView removeFromSuperview];
-		[_dividerView release];
-		_dividerView = [divider retain];
+		MGRelease(_dividerView);
+		_dividerView = MGRetain(divider);
 		_dividerView.splitViewController = self;
 		_dividerView.backgroundColor = MG_DEFAULT_CORNER_COLOR;
 		if ([self isShowingMaster]) {
@@ -1124,7 +1162,7 @@ static BOOL isIos7() {
 - (NSArray *)cornerViews
 {
 	if (_cornerViews) {
-		return [[_cornerViews retain] autorelease];
+		return MGAutorelease(MGRetain(_cornerViews));
 	}
 	
 	return nil;
