@@ -532,6 +532,10 @@ static BOOL isIos7() {
 	[self layoutSubviewsForInterfaceOrientation:self.interfaceOrientation withAnimation:YES];
 }
 
+- (void)viewWillLayoutSubviews
+{
+	[self layoutSubviews];
+}
 
 - (void)viewWillAppear:(BOOL)animated
 {
