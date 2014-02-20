@@ -182,15 +182,26 @@ static BOOL isIos7() {
 
 #pragma mark -
 #pragma mark View management
+- (BOOL)shouldAutomaticallyForwardRotationMethods
+{
+	return NO;
+}
 
+- (BOOL)shouldAutomaticallyForwardAppearanceMethods
+{
+	return NO;
+}
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
-    if (self.detailViewController) {
-        return [self.detailViewController shouldAutorotateToInterfaceOrientation:interfaceOrientation];
-    } else {
-       return YES; 
-    }
+	BOOL shouldAutorotate = YES;
+	if ( self.detailViewController ) {
+		shouldAutorotate &= [self.detailViewController shouldAutorotateToInterfaceOrientation:interfaceOrientation];
+	}
+	if ( self.masterViewController ) {
+		shouldAutorotate &= [self.masterViewController shouldAutorotateToInterfaceOrientation:interfaceOrientation];
+	}
+	return shouldAutorotate;
 }
 
 
@@ -211,9 +222,6 @@ static BOOL isIos7() {
 - (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation 
 										 duration:(NSTimeInterval)duration
 {
-	[self.masterViewController willAnimateRotationToInterfaceOrientation:toInterfaceOrientation duration:duration];
-	[self.detailViewController willAnimateRotationToInterfaceOrientation:toInterfaceOrientation duration:duration];
-	
 	// Hide popover.
 	if (_hiddenPopoverController && _hiddenPopoverController.popoverVisible) {
 		[_hiddenPopoverController dismissPopoverAnimated:NO];
@@ -222,6 +230,10 @@ static BOOL isIos7() {
 	// Re-tile views.
 	_reconfigurePopup = YES;
 	[self layoutSubviewsForInterfaceOrientation:toInterfaceOrientation withAnimation:YES];
+
+	[self.masterViewController willAnimateRotationToInterfaceOrientation:toInterfaceOrientation duration:duration];
+	[self.detailViewController willAnimateRotationToInterfaceOrientation:toInterfaceOrientation duration:duration];
+	
 }
 
 
@@ -278,7 +290,6 @@ static BOOL isIos7() {
 	return CGSizeMake(width, height);
 }
 
-
 - (void)layoutSubviewsForInterfaceOrientation:(UIInterfaceOrientation)theOrientation withAnimation:(BOOL)animate
 {
 	if (_reconfigurePopup) {
@@ -291,7 +302,7 @@ static BOOL isIos7() {
 	float width = fullSize.width;
 	float height = fullSize.height;
 	
-	if (NO) { // Just for debugging.
+	if (DEBUG) { // Just for debugging.
 		NSLog(@"Target orientation is %@, dimensions will be %.0f x %.0f", 
 			  [self nameOfInterfaceOrientation:theOrientation], width, height);
 	}
@@ -521,6 +532,10 @@ static BOOL isIos7() {
 	[self layoutSubviewsForInterfaceOrientation:self.interfaceOrientation withAnimation:YES];
 }
 
+- (void)viewWillLayoutSubviews
+{
+	[self layoutSubviews];
+}
 
 - (void)viewWillAppear:(BOOL)animated
 {
