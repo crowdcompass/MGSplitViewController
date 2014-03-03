@@ -302,11 +302,10 @@ static BOOL isIos7() {
 	float width = fullSize.width;
 	float height = fullSize.height;
 	
-	if (DEBUG) { // Just for debugging.
-		NSLog(@"Target orientation is %@, dimensions will be %.0f x %.0f", 
+#ifdef DEBUG
+		NSLog(@"Target orientation is %@, dimensions will be %.0f x %.0f",
 			  [self nameOfInterfaceOrientation:theOrientation], width, height);
-	}
-	
+#endif
 	// Layout the master, divider and detail views.
     CGRect newFrame = CGRectMake(0, 0, width, height);
 	UIViewController *controller;
